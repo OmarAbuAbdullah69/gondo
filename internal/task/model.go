@@ -9,6 +9,7 @@ type Tasker interface {
 	GetID() int
 	GetTitle() string
 	IsCompletee() bool
+	Toggle() bool
 }
 
 type Task struct {
@@ -33,14 +34,18 @@ func (c *CompositeTask) UpdateStatus() {
 }
 
 // Task
-func (c Task) GetID() int {
-	return c.ID
+func (t Task) GetID() int {
+	return t.ID
 }
-func (c CompositeTask) GetTitle() string {
-	return c.Title
+func (t Task) GetTitle() string {
+	return t.Title
 }
-func (c Task) IsCompletee() bool {
-	return c.Completed
+func (t Task) IsCompletee() bool {
+	return t.Completed
+}
+func (t *Task) Toggle() bool {
+	t.Completed = !t.Completed
+	return t.Completed
 }
 
 // Task
@@ -49,11 +54,15 @@ func (c Task) IsCompletee() bool {
 func (c CompositeTask) GetID() int {
 	return c.ID
 }
-func (c Task) GetTitle() string {
+func (c CompositeTask) GetTitle() string {
 	return c.Title
 }
 func (c CompositeTask) IsCompletee() bool {
 	c.UpdateStatus()
+	return c.Completed
+}
+func (c *CompositeTask) Toggle() bool {
+	c.Completed = !c.Completed
 	return c.Completed
 }
 
@@ -83,4 +92,37 @@ func (tl *TaskList) Read(path string) error {
 		return err
 	}
 	return nil
+}
+
+func find(tl *[]Tasker, id int) (*[]Tasker, int, bool) {
+	var listRet *[]Tasker
+	var index int
+	found := false
+	for i, t := range *tl {
+		if t.GetID() == id {
+			listRet = tl
+			index = i
+			found = true
+			break
+		}
+
+		//might cause a bug bc of the switch
+		switch tt := t.(type) {
+		case *CompositeTask:
+			listRet, index, found = find(&tt.SubTasks, id)
+			if found {
+				return listRet, index, found
+			}
+		}
+	}
+	return listRet, index, found
+}
+
+func (tl *TaskList) Toggle(id int) bool{
+	list, index, found := find(&tl.Tasks, id)
+	if found {
+		t := (*list)[index]
+		t.Toggle()
+	}
+	return found
 }

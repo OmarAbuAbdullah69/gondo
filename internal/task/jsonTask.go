@@ -46,8 +46,8 @@ func detectTask(raw json.RawMessage) (Tasker, error) {
 		if err != nil {
 			return nil, nil
 		}
-		return CompositeTask{Task: compRaw.Task, SubTasks: taskers}, nil
+		return &CompositeTask{Task: compRaw.Task, SubTasks: taskers}, nil
 	} else {
-		return compRaw.Task, nil
+		return &compRaw.Task, nil
 	}
 }
