@@ -1,0 +1,243 @@
+{
+	"name": "leaning programing",
+	"tasks": [
+		{
+			"title": "learn a language",
+			"completed": true,
+			"subtasks": [
+				{
+					"title": "learn baiscs",
+					"completed": true
+				},
+				{
+					"title": "make a simple project",
+					"completed": true
+				}
+			]
+		},
+		{
+			"title": "make an actual project",
+			"completed": true
+		},
+		{
+			"title": "study data structures",
+			"completed": true,
+			"subtasks": [
+				{
+					"title": "learn arrays and slices",
+					"completed": true
+				},
+				{
+					"title": "study linked lists",
+					"completed": true
+				},
+				{
+					"title": "practice with small problems",
+					"completed": true
+				}
+			]
+		},
+		{
+			"title": "explore algorithms",
+			"completed": true,
+			"subtasks": [
+				{
+					"title": "sorting algorithms",
+					"completed": true
+				},
+				{
+					"title": "searching algorithms",
+					"completed": true
+				},
+				{
+					"title": "graph basics",
+					"completed": false
+				}
+			]
+		},
+		{
+			"title": "learn version control",
+			"completed": false,
+			"subtasks": [
+				{
+					"title": "learn git basics",
+					"completed": true
+				},
+				{
+					"title": "create a github repo",
+					"completed": true
+				},
+				{
+					"title": "push your first project",
+					"completed": true
+				},
+				{
+					"title": "learn branching",
+					"completed": true
+				}
+			]
+		},
+		{
+			"title": "study testing",
+			"completed": false,
+			"subtasks": [
+				{
+					"title": "learn unit testing",
+					"completed": false
+				},
+				{
+					"title": "write tests for a project",
+					"completed": false
+				},
+				{
+					"title": "explore test coverage tools",
+					"completed": false
+				}
+			]
+		},
+		{
+			"title": "explore frameworks",
+			"completed": false,
+			"subtasks": [
+				{
+					"title": "choose a framework",
+					"completed": false
+				},
+				{
+					"title": "make a small app",
+					"completed": false
+				}
+			]
+		},
+		{
+			"title": "learn debugging",
+			"completed": false,
+			"subtasks": [
+				{
+					"title": "learn how to use breakpoints",
+					"completed": false
+				},
+				{
+					"title": "debug a real issue",
+					"completed": false
+				}
+			]
+		},
+		{
+			"title": "improve problem solving",
+			"completed": false,
+			"subtasks": [
+				{
+					"title": "solve easy problems",
+					"completed": false
+				},
+				{
+					"title": "solve medium problems",
+					"completed": false
+				},
+				{
+					"title": "learn patterns",
+					"completed": false
+				}
+			]
+		},
+		{
+			"title": "learn software design",
+			"completed": false,
+			"subtasks": [
+				{
+					"title": "understand modular design",
+					"completed": false
+				},
+				{
+					"title": "learn dependency injection",
+					"completed": false
+				}
+			]
+		},
+		{
+			"title": "learn build systems",
+			"completed": false,
+			"subtasks": [
+				{
+					"title": "learn build tools",
+					"completed": false
+				},
+				{
+					"title": "automate a small project",
+					"completed": false
+				}
+			]
+		},
+		{
+			"title": "learn API development",
+			"completed": false,
+			"subtasks": [
+				{
+					"title": "learn how APIs work",
+					"completed": true
+				},
+				{
+					"title": "build a simple API",
+					"completed": true
+				},
+				{
+					"title": "add authentication",
+					"completed": true
+				}
+			]
+		},
+		{
+			"title": "learn databases",
+			"completed": true,
+			"subtasks": [
+				{
+					"title": "learn SQL basics",
+					"completed": true
+				},
+				{
+					"title": "write queries",
+					"completed": true
+				},
+				{
+					"title": "build a database-backed app",
+					"completed": true
+				}
+			]
+		},
+		{
+			"title": "make a portfolio",
+			"completed": true,
+			"subtasks": [
+				{
+					"title": "collect your best projects",
+					"completed": true
+				},
+				{
+					"title": "create a portfolio website",
+					"completed": true
+				},
+				{
+					"title": "add descriptions and screenshots",
+					"completed": true
+				}
+			]
+		},
+		{
+			"title": "place holder",
+			"completed": false
+		},
+		{
+			"title": "place holder",
+			"completed": false
+		},
+		{
+			"title": "place holder",
+			"completed": false
+		},
+		{
+			"title": "place holder",
+			"completed": false
+		}
+	]
+}

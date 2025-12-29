@@ -3,17 +3,18 @@ package task
 import (
 	"encoding/json"
 	"os"
+	"slices"
 )
 
 type Tasker interface {
 	GetID() int
+	SetID(int)
 	GetTitle() string
-	IsCompletee() bool
-	Toggle() bool
+	IsCompleted() bool
 }
 
 type Task struct {
-	ID        int    `json:"id"`
+	ID        int    `json:"-"`
 	Title     string `json:"title"`
 	Completed bool   `json:"completed"`
 }
@@ -25,7 +26,7 @@ type CompositeTask struct {
 
 func (c *CompositeTask) UpdateStatus() {
 	for _, st := range c.SubTasks {
-		if !st.IsCompletee() {
+		if !st.IsCompleted() {
 			c.Completed = false
 			return
 		}
@@ -37,10 +38,13 @@ func (c *CompositeTask) UpdateStatus() {
 func (t Task) GetID() int {
 	return t.ID
 }
+func (t *Task) SetID(ID int) {
+	t.ID = ID
+}
 func (t Task) GetTitle() string {
 	return t.Title
 }
-func (t Task) IsCompletee() bool {
+func (t Task) IsCompleted() bool {
 	return t.Completed
 }
 func (t *Task) Toggle() bool {
@@ -54,15 +58,14 @@ func (t *Task) Toggle() bool {
 func (c CompositeTask) GetID() int {
 	return c.ID
 }
+func (c *CompositeTask) SetID(ID int) {
+	c.ID = ID
+}
 func (c CompositeTask) GetTitle() string {
 	return c.Title
 }
-func (c CompositeTask) IsCompletee() bool {
+func (c CompositeTask) IsCompleted() bool {
 	c.UpdateStatus()
-	return c.Completed
-}
-func (c *CompositeTask) Toggle() bool {
-	c.Completed = !c.Completed
 	return c.Completed
 }
 
@@ -118,11 +121,28 @@ func find(tl *[]Tasker, id int) (*[]Tasker, int, bool) {
 	return listRet, index, found
 }
 
-func (tl *TaskList) Toggle(id int) bool{
+func (tl *TaskList) Toggle(id int) bool {
 	list, index, found := find(&tl.Tasks, id)
 	if found {
 		t := (*list)[index]
-		t.Toggle()
+		switch tt := t.(type) {
+		case *Task:
+			tt.Toggle()
+		default:
+		}
 	}
 	return found
+}
+func (tl *TaskList) Delete(id int) bool {
+	list, index, found := find(&tl.Tasks, id)
+	if found {
+		*list = slices.Delete(*list, index, index+1)
+	}
+	return found
+}
+func (tl *TaskList) AddTask(id int, before bool) {
+	tl.Tasks = append(
+		tl.Tasks,
+		&Task{ID: tasksCounter + 1, Title: "place holder", Completed: false},
+	)
 }

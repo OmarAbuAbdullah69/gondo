@@ -9,7 +9,7 @@ import (
 
 func main() {
 	var tl task.TaskList
-	err := tl.Read("./tasks.json")
+	err := tl.Read("./tasksdd2.json")
 	if err != nil {
 		fmt.Printf("error of type %T\n", err)
 		fmt.Println("description:\n\t", err)
@@ -19,7 +19,7 @@ func main() {
 		fmt.Printf("error of type %T\n", err)
 		fmt.Println("description:\n\t", err)
 	}
-	tl.Write("./tasks2.json")
+	tl.Write("./tasksdd2.json")
 	
 }
 

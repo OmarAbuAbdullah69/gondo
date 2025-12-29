@@ -3,30 +3,37 @@ package tui
 import (
 	"fmt"
 	"gondo/internal/task"
+	"slices"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/lipgloss"
 )
 
 type model struct {
 	tl     *task.TaskList
+	input  textinput.Model
+	listtening bool
 	width  int
 	hieght int
 }
 
 var (
-	found                 bool
-
 	tasksLinesCount       int
 	tasksViewPortCap      int
 	tasksViewStartLine    = 1
 	tasksViewSelectedLine = 1
 	selectedTaskID        int
+
+	unfoldCompTasks []int
 )
 
 func Newmodle(tl *task.TaskList) model {
-	return model{tl: tl}
+	ti := textinput.New()
+	ti.Placeholder = "enter text here"
+	ti.CharLimit = 60
+	return model{tl: tl, input: ti, listtening: false}
 }
 
 // the buffer is counted from top to bottom so by moving up we are dicreasing the value
@@ -79,7 +86,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "down":
 			moveLineDwon()
 		case "t":
-			found = m.tl.Toggle(selectedTaskID)
+			m.tl.Toggle(selectedTaskID)
+		case "f":
+				index,found := slices.BinarySearch(unfoldCompTasks, selectedTaskID)
+			if found{
+				unfoldCompTasks = slices.Delete(unfoldCompTasks, index, index+1)
+			} else {
+				unfoldCompTasks = append(unfoldCompTasks, selectedTaskID)
+			}
+		case "d":
+			m.tl.Delete(selectedTaskID)
+		case "A":
+			m.tl.AddTask(selectedTaskID, false)
+		case "a":
+			m.tl.AddTask(selectedTaskID, true)
 		}
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -100,34 +120,35 @@ var taskIncompletedStyle = lipgloss.NewStyle().Inherit(taskStyle)
 var ctaskCompletedStyle = lipgloss.NewStyle().
 	Inherit(taskStyle).
 	Foreground(lipgloss.Color("#14b83d")).
-	Underline(true).Bold(true)
-var ctaskIncompletedStyle = lipgloss.NewStyle().Inherit(taskStyle).Underline(true).Bold(true)
+	Bold(true)
+var ctaskIncompletedStyle = lipgloss.NewStyle().Inherit(taskStyle).Bold(true)
 
 var taskLine = 0
 
 func taskToString(tl []task.Tasker, indent int) []string {
 	var ret []string
-	tlen := len(tl)
 	for i, t := range tl {
 		taskLine++
 		if taskLine == tasksViewSelectedLine {
 			selectedTaskID = t.GetID()
 		}
-		s := strings.Repeat("\t", indent) + fmt.Sprintf("%d. ", tlen-i) + t.GetTitle()
+		s := strings.Repeat("\t", indent) + fmt.Sprintf("%d. ", i+1) + t.GetTitle()
 		switch tt := t.(type) {
 		case *task.Task:
-			if tt.Completed {
+			if tt.IsCompleted() {
 				ret = append(ret, taskCompletedStyle.Render(s))
 			} else {
 				ret = append(ret, taskIncompletedStyle.Render(s))
 			}
 		case *task.CompositeTask:
-			if tt.Completed {
+			if tt.IsCompleted() {
 				ret = append(ret, ctaskCompletedStyle.Render(s))
 			} else {
 				ret = append(ret, ctaskIncompletedStyle.Render(s))
 			}
-			ret = append(ret, taskToString(tt.SubTasks, indent+1)...)
+			if slices.Contains(unfoldCompTasks, tt.GetID()) {
+				ret = append(ret, taskToString(tt.SubTasks, indent+1)...)
+			}
 		}
 	}
 	return ret
@@ -156,7 +177,7 @@ func footerStr(m model) string {
 	ret = lipgloss.JoinHorizontal(
 		lipgloss.Bottom,
 		ret,
-		fmt.Sprintf("	 found: %v  ", found),
+		fmt.Sprintf("	 ID: %v  ", m.listtening),
 	)
 	footerStyle := lipgloss.NewStyle().
 		Border(lipgloss.NormalBorder()).
@@ -206,7 +227,7 @@ func (m model) View() string {
 		} else if i == taskBufferStartLine {
 			lineStyle = lineStyle.Background(lipgloss.Color("#ff0000"))
 		} else */if i == tasksViewSelectedLine {
-			lineStyle = lineStyle.Background(lipgloss.Color("#ffffff"))
+			lineStyle = lineStyle.Background(lipgloss.Color("#554e56"))
 		}
 		tasksStr += lineStyle.Render(tasks[i-1])
 		lineStyle = lineStyle.Background(lipgloss.Color(""))
@@ -216,11 +237,11 @@ func (m model) View() string {
 		}
 		break
 	}
-	body = lipgloss.Place(m.width-6, bodyHeight, lipgloss.Left, lipgloss.Top, tasksStr)
+	body = lipgloss.Place(m.width-8, bodyHeight, lipgloss.Left, lipgloss.Top, tasksStr)
 	view = lipgloss.JoinVertical(
 		lipgloss.Left,
 		header,
-		bodyStyle.Render(body),
+		lipgloss.JoinHorizontal(lipgloss.Left,lipgloss.Place(2, bodyHeight, lipgloss.Left, lipgloss.Top, " "), bodyStyle.Render(body)),
 		footer,
 	)
 

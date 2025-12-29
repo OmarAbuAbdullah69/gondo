@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 )
 
+var tasksCounter=0
 func UnMarshalTaskList(data []byte, tl *TaskList) error {
+	tasksCounter = 0
 	var raw struct {
 		Name  string            `json:"name"`
 		Tasks []json.RawMessage `json:"tasks"`
@@ -28,6 +30,8 @@ func unMarshalTaskerList(trr []json.RawMessage) ([]Tasker, error) {
 		if err != nil {
 			return nil, err
 		}
+		t.SetID(tasksCounter)
+		tasksCounter++
 		trl = append(trl, t)
 	}
 	return trl, nil
