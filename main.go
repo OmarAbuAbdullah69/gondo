@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	core "gondo/internal/Core"
 	"gondo/internal/task"
-	"gondo/internal/tui"
 )
 
 
@@ -14,8 +14,8 @@ func main() {
 		fmt.Printf("error of type %T\n", err)
 		fmt.Println("description:\n\t", err)
 	}
-
-	if err:=tui.StartDisplay(&tl); err!= nil {
+	
+	if err:= core.Init(&tl); err!= nil {
 		fmt.Printf("error of type %T\n", err)
 		fmt.Println("description:\n\t", err)
 	}
