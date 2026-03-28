@@ -1,99 +1,131 @@
 package tui
 
 import (
+	"slices"
+
+	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
 type model struct {
-	input      textinput.Model
-	listtening bool
-	width      int
-	hieght     int
 }
 
 var (
-	updateFunc func()
-	header  string
-	strList []string
-	footer  string
+	Width  int
+	Height int
+
+	updateFunc func(string, string)
+	header     string
+	strList    []string
+	footer     string
+
+	input       textinput.Model
+	listtening  bool = false
+	inputString string
+	keyListen   []string
+	ListenEvent string
 )
 
-func SetUpdater(u func()) {
+func SetKeyListen(s []string) {
+	keyListen = append(keyListen, s...)
+}
+
+func SetUpdater(u func(string, string)) {
 	updateFunc = u
 }
 
-func SetHeader(h *string) {
-	header = *h
+func SetHeader(h string) {
+	header = h
 }
 func SetStrList(sl []string) {
 	strList = sl
 }
-func SetFooter(f *string) {
-	footer = *f
+func SetFooter(f string) {
+	footer = f
 }
 func Newmodle() model {
-	ti := textinput.New()
-	ti.Placeholder = "enter text here"
-	ti.CharLimit = 60
-	return model{input: ti, listtening: false}
+	input = textinput.New()
+	return model{}
 }
 
 func (m model) Init() tea.Cmd {
-	// Just return `nil`, which means "no I/O right now, please."
-	return nil
+	input.Cursor.SetMode(cursor.CursorBlink)
+	return textinput.Blink
 }
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var event string
+	var cmd tea.Cmd
+	if listtening {
+		input, cmd = input.Update(msg)
+	}
 	switch msg := msg.(type) {
-
-	// Is it a key press?
 	case tea.KeyMsg:
-
-		// Cool, what was the actual key pressed?
+		event = msg.String()
 		switch msg.String() {
 
-		// These keys should exit the program.
-		case "ctrl+c", "q":
-			return m, tea.Quit
-		case "up":
-		case "down":
-		case "t":
-		case "f":
-		case "d":
-		case "A":
-		case "a":
+		case "esc":
+			if listtening {
+				listtening = false
+				input.Blur()
+				input.Reset()
+			} else {
+				return m, tea.Quit
+			}
+		case "q":
+			if !listtening {
+				return m, tea.Quit
+			}
+		case "enter":
+			listtening = false
+			input.Blur()
+			inputString = input.Value()
+			input.Reset()
+		default:
+			event = msg.String()
+			if !listtening {
+				if slices.Contains(keyListen, event) {
+					listtening = true
+					input.Focus()
+					ListenEvent = event
+				}
+			}
 		}
 	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.hieght = msg.Height
+		Width = msg.Width
+		Height = msg.Height
 	}
-	updateFunc()
-	// Return the updated model to the Bubble Tea runtime for processing.
-	// Note that we're not returning a command.
-	return m, nil
+	if !listtening {
+		if len(ListenEvent) != 0 && len(inputString) != 0 {
+			updateFunc(ListenEvent, inputString)
+			ListenEvent = ""
+			inputString = ""
+		} else {
+			updateFunc(event, inputString)
+		}
+	} else {
+		updateFunc("", "")
+	}
+	return m, cmd
 }
 
-var taskStyle = lipgloss.NewStyle().Margin(0, 0, 0, 0).TabWidth(4)
-
-var taskCompletedStyle = lipgloss.NewStyle().
-	Inherit(taskStyle).
-	Foreground(lipgloss.Color("#14b83d"))
-var taskIncompletedStyle = lipgloss.NewStyle().Inherit(taskStyle)
-
-var ctaskCompletedStyle = lipgloss.NewStyle().
-	Inherit(taskStyle).
-	Foreground(lipgloss.Color("#14b83d")).
-	Bold(true)
-var ctaskIncompletedStyle = lipgloss.NewStyle().Inherit(taskStyle).Bold(true)
-
 func (m model) View() string {
+	if listtening {
+		footer = input.View()
+		fs := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("#fc4103")).
+		Width(Width - 8)
+
+		footer = fs.Render(footer)
+	}
 	// Send the UI for rendering
 	var view string
 	frame := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("#fc4103")).
-		Padding(0, 1, 0, 1)
+		Padding(0, 1, 0, 1).Margin(0)
 
 	bodyBorder := lipgloss.Border{Top: "",
 		Bottom:      "",
@@ -104,22 +136,27 @@ func (m model) View() string {
 		BottomLeft:  "",
 		BottomRight: ""}
 	var body string
-	bodyStyle := lipgloss.NewStyle().Border(bodyBorder)
 
-	// tasks is spoused to be below this code but it will cause some issues rendring the data
-	// tasks := core.TasksToString()
-	//
+	for i, s := range strList {
+		if i != len(strList)-1 {
+			s += "\n"
+		}
+		body += s
+	}
 	headerHeight := lipgloss.Height(header)
 	footerHeight := lipgloss.Height(footer)
-	bodyHeight := m.hieght - (headerHeight + footerHeight) - 4
+	bodyHeight := Height - (headerHeight + footerHeight) - 2
 
+	bodyStyle := lipgloss.NewStyle().Border(bodyBorder)
+
+	body = lipgloss.Place(0, bodyHeight-3, lipgloss.Left, lipgloss.Top, body)
 	// drawing the tasks
 	view = lipgloss.JoinVertical(
 		lipgloss.Left,
 		header,
 		lipgloss.JoinHorizontal(
 			lipgloss.Left,
-			lipgloss.Place(2, bodyHeight, lipgloss.Left, lipgloss.Top, " "),
+			lipgloss.Place(0, bodyHeight, lipgloss.Left, lipgloss.Top, " "),
 			bodyStyle.Render(body),
 		),
 		footer,
