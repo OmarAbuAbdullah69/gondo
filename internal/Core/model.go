@@ -222,7 +222,6 @@ func footerStr() string {
 		BorderForeground(lipgloss.Color("#fc4103"))
 
 	rightHand := "Status: "
-	rightHand += strconv.Itoa(horizontalCap)
 	rHS := lipgloss.NewStyle()
 	if selectedTask.IsCompleted() {
 		rHS = rHS.Foreground(lipgloss.Color("#6cef2f"))
@@ -232,7 +231,6 @@ func footerStr() string {
 		rightHand += rHS.Render("Incompleted")
 	}
 	leftHand := "Type: "
-	leftHand += strconv.Itoa(horizontalIndex)
 	switch selectedTask.(type) {
 	case *task.Task:
 		leftHand += "Task"
@@ -240,8 +238,9 @@ func footerStr() string {
 		leftHand += "CompositeTask"
 	}
 	str := lipgloss.JoinHorizontal(lipgloss.Center,
-		lipgloss.PlaceHorizontal(footerWidth/2, lipgloss.Left, leftHand),
-		lipgloss.PlaceHorizontal(footerWidth/2, lipgloss.Right, rightHand))
+		lipgloss.PlaceHorizontal(footerWidth/3, lipgloss.Left, leftHand),
+		lipgloss.PlaceHorizontal(footerWidth/3, lipgloss.Center, strconv.Itoa(tasksViewSelectedLine)+":"+strconv.Itoa(horizontalIndex)),
+		lipgloss.PlaceHorizontal(footerWidth/3, lipgloss.Right, rightHand))
 
 	str = lipgloss.PlaceHorizontal(tui.Width-6, lipgloss.Center, str)
 
