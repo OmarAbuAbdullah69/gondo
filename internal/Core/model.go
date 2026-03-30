@@ -21,7 +21,7 @@ var (
 
 	unfoldCompTasks []int
 
-	horizontalCap int
+	horizontalCap   int
 	horizontalIndex = 0
 )
 
@@ -67,7 +67,7 @@ func Update(event string, msg string) {
 			tasksViewSelectedLine++
 		}
 	case "right":
-		if horizontalIndex < horizontalCap-tui.Width+16{
+		if horizontalIndex < horizontalCap-tui.Width+16 {
 			horizontalIndex++
 		}
 	case "left":
@@ -75,33 +75,49 @@ func Update(event string, msg string) {
 			horizontalIndex--
 		}
 	case "f":
-		if slices.Contains(unfoldCompTasks, selectedTask.GetID()) {
-			index := slices.Index(unfoldCompTasks, selectedTask.GetID())
-			unfoldCompTasks = slices.Delete(unfoldCompTasks, index, index+1)
-		} else {
-			unfoldCompTasks = append(unfoldCompTasks, selectedTask.GetID())
+		if selectedTask != nil {
+			if slices.Contains(unfoldCompTasks, selectedTask.GetID()) {
+				index := slices.Index(unfoldCompTasks, selectedTask.GetID())
+				unfoldCompTasks = slices.Delete(unfoldCompTasks, index, index+1)
+			} else {
+				unfoldCompTasks = append(unfoldCompTasks, selectedTask.GetID())
+			}
 		}
 	case " ":
-		core.tl.Toggle(selectedTask.GetID())
+		if selectedTask != nil {
+			core.tl.Toggle(selectedTask.GetID())
+		}
 	case "d":
-		core.tl.Delete(selectedTask.GetID())
-		if tasksViewSelectedLine > maxscroll-1 {
-			tasksViewSelectedLine = maxscroll - 1
+		if selectedTask != nil {
+			core.tl.Delete(selectedTask.GetID())
+			if tasksViewSelectedLine > maxscroll-1 {
+				tasksViewSelectedLine = maxscroll - 1
+			}
 		}
 		task.UpdateTL(&core.tl.Tasks)
 	case "a":
-		core.tl.AddTask(selectedTask.GetID(), msg, false)
+		if selectedTask != nil {
+			core.tl.AddTask(selectedTask.GetID(), msg, false)
+		}
 	case "A":
-		core.tl.AddTask(selectedTask.GetID(), msg, true)
+		core.tl.AddTask(0, msg, true)
 	case "p":
-		core.tl.PushDown(selectedTask.GetID(), msg)
+		if selectedTask != nil {
+			core.tl.PushDown(selectedTask.GetID(), msg)
+		}
 	case "i":
-		core.tl.InsertTask(selectedTask.GetID(), msg, false)
+		if selectedTask != nil {
+			core.tl.InsertTask(selectedTask.GetID(), msg, false)
+		}
 	case "I":
-		core.tl.InsertTask(selectedTask.GetID(), msg, true)
-		tasksViewSelectedLine++
+		if selectedTask != nil {
+			core.tl.InsertTask(selectedTask.GetID(), msg, true)
+			tasksViewSelectedLine++
+		}
 	case "r":
-		core.tl.RenameTask(selectedTask.GetID(), msg)
+		if selectedTask != nil {
+			core.tl.RenameTask(selectedTask.GetID(), msg)
+		}
 	case "R":
 		core.tl.Name = msg
 		//
@@ -115,11 +131,10 @@ func Update(event string, msg string) {
 		if len(t.s) > horizontalIndex && len(t.s) < horizontalIndex+tui.Width-6 {
 			t.s = t.s[horizontalIndex:]
 		} else if len(t.s) >= horizontalIndex+tui.Width-6 {
-			t.s = t.s[horizontalIndex:horizontalIndex+tui.Width-6]
+			t.s = t.s[horizontalIndex : horizontalIndex+tui.Width-6]
 		} else {
 			t.s = ""
 		}
-
 
 		style := lipgloss.NewStyle()
 		if (*t.t).IsCompleted() {
@@ -128,8 +143,9 @@ func Update(event string, msg string) {
 		switch (*t.t).(type) {
 		case *task.CompositeTask:
 			style = style.Bold(true)
-			if len(t.s)!=0 {
-			t.s += lipgloss.NewStyle().Foreground(lipgloss.Color("#fc4103")).Render(" #")}
+			if len(t.s) != 0 {
+				t.s += lipgloss.NewStyle().Foreground(lipgloss.Color("#fc4103")).Render(" #")
+			}
 		}
 		if i+1 == tasksViewSelectedLine {
 			selectedTask = *t.t
@@ -222,25 +238,33 @@ func footerStr() string {
 		BorderForeground(lipgloss.Color("#fc4103"))
 
 	rightHand := "Status: "
-	rHS := lipgloss.NewStyle()
-	if selectedTask.IsCompleted() {
-		rHS = rHS.Foreground(lipgloss.Color("#6cef2f"))
-		rightHand += rHS.Render("Completed")
-	} else {
-		rHS = rHS.Foreground(lipgloss.Color("#fc4103"))
-		rightHand += rHS.Render("Incompleted")
-	}
 	leftHand := "Type: "
-	switch selectedTask.(type) {
-	case *task.Task:
-		leftHand += "Task"
-	case *task.CompositeTask:
-		leftHand += "CompositeTask"
+	if selectedTask != nil {
+		rHS := lipgloss.NewStyle()
+		if selectedTask.IsCompleted() {
+			rHS = rHS.Foreground(lipgloss.Color("#6cef2f"))
+			rightHand += rHS.Render("Completed")
+		} else {
+			rHS = rHS.Foreground(lipgloss.Color("#fc4103"))
+			rightHand += rHS.Render("Incompleted")
+		}
+		switch selectedTask.(type) {
+		case *task.Task:
+			leftHand += "Task"
+		case *task.CompositeTask:
+			leftHand += "CompositeTask"
+		}
 	}
-	str := lipgloss.JoinHorizontal(lipgloss.Center,
+	str := lipgloss.JoinHorizontal(
+		lipgloss.Center,
 		lipgloss.PlaceHorizontal(footerWidth/3, lipgloss.Left, leftHand),
-		lipgloss.PlaceHorizontal(footerWidth/3, lipgloss.Center, strconv.Itoa(tasksViewSelectedLine)+":"+strconv.Itoa(horizontalIndex)),
-		lipgloss.PlaceHorizontal(footerWidth/3, lipgloss.Right, rightHand))
+		lipgloss.PlaceHorizontal(
+			footerWidth/3,
+			lipgloss.Center,
+			strconv.Itoa(tasksViewSelectedLine)+":"+strconv.Itoa(horizontalIndex),
+		),
+		lipgloss.PlaceHorizontal(footerWidth/3, lipgloss.Right, rightHand),
+	)
 
 	str = lipgloss.PlaceHorizontal(tui.Width-6, lipgloss.Center, str)
 

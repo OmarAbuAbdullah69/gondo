@@ -103,10 +103,10 @@ func (tl TaskList) Write(path string) error {
 		return nil
 	}
 	dir := filepath.Dir(path)
-	if err1 := os.MkdirAll(dir, os.ModePerm); err != nil {
+	if err1 := os.MkdirAll(dir, os.ModePerm); err1 != nil {
 		return err1
 	}
-	if err1 := os.WriteFile(path, data, 0644); err != nil {
+	if err1 := os.WriteFile(path, data, 0644); err1 != nil {
 		return err1
 	}
 	return err
