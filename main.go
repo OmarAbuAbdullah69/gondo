@@ -51,6 +51,9 @@ func main() {
 		fmt.Printf("error of type %T\n", err)
 		fmt.Println("description:\n\t", err)
 	}
+	if len(tl.Tasks) + len(tl.Name) == 0 {
+		return
+	}
 	err := tl.Write(path)
 	if err != nil {
 		fmt.Printf("error of type %T\n", err)
