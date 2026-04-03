@@ -11,26 +11,26 @@ import (
 )
 
 var core struct {
-	tl *task.TaskList
-}
-
-var (
-	tasksViewStartLine    = 1
-	tasksViewSelectedLine = 1
+	tl                    *task.TaskList
+	tasksViewStartLine    int
+	tasksViewSelectedLine int
 	selectedTask          task.Tasker
 
 	unfoldCompTasks []int
 
 	horizontalCap   int
-	horizontalIndex = 0
-)
+	horizontalIndex int
+}
 
 type strTask struct {
-	t *task.Tasker
+	t task.Tasker
 	s string
 }
 
 func Init(tl *task.TaskList, global bool) error {
+	core.tasksViewSelectedLine = 1
+	core.tasksViewStartLine = 1
+
 	if len(tl.Name) == 0 && len(tl.Tasks) == 0 {
 		if global {
 			tl.Name = "Global todo list"
@@ -46,168 +46,178 @@ func Init(tl *task.TaskList, global bool) error {
 }
 
 var maxscroll = 999 // its set to this number  just roto hold scrolling untill  the next key press just to make handle lenght later
-func Update(event string, msg string) {
+func Update(event string, msg string) tui.ViewModel{
+	var vm tui.ViewModel
 	if tui.Width <= 0 {
-
-		return
+		return vm
 	}
 
-	// next i should make styling happen here in this function
-
 	h := headerStr()
-	tui.SetHeader(h)
+	vm.Header = h
 
+	handleInput(event, msg)
+
+	stl := taskToString(&(core.tl.Tasks), 0)
+	maxscroll = len(stl)
+
+	stl = styleSTL(stl)
+
+
+	f := footerStr()
+	vm.Footer = f
+	headerHeight := lipgloss.Height(h)
+	footerHeight := lipgloss.Height(f)
+	bodyHeight := tui.Height - (headerHeight + footerHeight) - 4
+	tasksLinesCount := bodyHeight - 2
+
+	v := core.tasksViewSelectedLine - core.tasksViewStartLine
+	if v == tasksLinesCount+1 {
+		core.tasksViewStartLine++
+	} else if v < 0 {
+		core.tasksViewStartLine += v
+	}
+
+	sl := make([]string, len(stl))
+	for i := range stl {
+		sl[i] = stl[i].s
+	}
+
+	if len(sl) == 0 {
+		vm.StrList = sl
+	}
+	if core.tasksViewStartLine+tasksLinesCount <= len(stl) {
+		vm.StrList = sl[core.tasksViewStartLine-1 : core.tasksViewStartLine+tasksLinesCount]
+	} else {
+		if core.tasksViewStartLine == 0 {
+			vm.StrList = sl
+		} else {
+			vm.StrList = sl[core.tasksViewStartLine-1:]
+		}
+	}
+	return vm
+}
+
+func handleInput(event string, msg string) {
 	switch event {
 	case "up":
-		if tasksViewSelectedLine > 1 {
-			tasksViewSelectedLine--
+		if core.tasksViewSelectedLine > 1 {
+			core.tasksViewSelectedLine--
 		}
 	case "down":
-		if tasksViewSelectedLine < maxscroll {
-			tasksViewSelectedLine++
+		if core.tasksViewSelectedLine < maxscroll {
+			core.tasksViewSelectedLine++
 		}
 	case "right":
-		if horizontalIndex < horizontalCap-tui.Width+16 {
-			horizontalIndex++
+		if core.horizontalIndex < core.horizontalCap-tui.Width+16 {
+			core.horizontalIndex++
 		}
 	case "left":
-		if horizontalIndex > 0 {
-			horizontalIndex--
+		if core.horizontalIndex > 0 {
+			core.horizontalIndex--
 		}
 	case "f":
-		if selectedTask != nil {
-			if slices.Contains(unfoldCompTasks, selectedTask.GetID()) {
-				index := slices.Index(unfoldCompTasks, selectedTask.GetID())
-				unfoldCompTasks = slices.Delete(unfoldCompTasks, index, index+1)
+		if core.selectedTask != nil {
+			if slices.Contains(core.unfoldCompTasks, core.selectedTask.GetID()) {
+				index := slices.Index(core.unfoldCompTasks, core.selectedTask.GetID())
+				core.unfoldCompTasks = slices.Delete(core.unfoldCompTasks, index, index+1)
 			} else {
-				unfoldCompTasks = append(unfoldCompTasks, selectedTask.GetID())
+				core.unfoldCompTasks = append(core.unfoldCompTasks, core.selectedTask.GetID())
 			}
 		}
 	case " ":
-		if selectedTask != nil {
-			core.tl.Toggle(selectedTask.GetID())
+		if core.selectedTask != nil {
+			core.tl.Toggle(core.selectedTask.GetID())
 		}
 	case "d":
-		if selectedTask != nil {
-			core.tl.Delete(selectedTask.GetID())
-			if tasksViewSelectedLine > maxscroll-1 {
-				tasksViewSelectedLine = maxscroll - 1
+		if core.selectedTask != nil {
+			core.tl.Delete(core.selectedTask.GetID())
+			if core.tasksViewSelectedLine > maxscroll-1 {
+				if maxscroll > 1 {
+					core.tasksViewSelectedLine = maxscroll - 1
+				}
 			}
 		}
 		task.UpdateTL(&core.tl.Tasks)
 	case "a":
-		if selectedTask != nil {
-			core.tl.AddTask(selectedTask.GetID(), msg, false)
+		if core.selectedTask != nil {
+			core.tl.AddTask(core.selectedTask.GetID(), msg, false)
 		}
 	case "A":
 		core.tl.AddTask(0, msg, true)
 	case "p":
-		if selectedTask != nil {
-			core.tl.PushDown(selectedTask.GetID(), msg)
+		if core.selectedTask != nil {
+			core.tl.PushDown(core.selectedTask.GetID(), msg)
+			core.unfoldCompTasks = append(core.unfoldCompTasks, core.selectedTask.GetID())
 		}
 	case "i":
-		if selectedTask != nil {
-			core.tl.InsertTask(selectedTask.GetID(), msg, false)
+		if core.selectedTask != nil {
+			core.tl.InsertTask(core.selectedTask.GetID(), msg, false)
 		}
 	case "I":
-		if selectedTask != nil {
-			core.tl.InsertTask(selectedTask.GetID(), msg, true)
-			tasksViewSelectedLine++
+		if core.selectedTask != nil {
+			core.tl.InsertTask(core.selectedTask.GetID(), msg, true)
+			core.tasksViewSelectedLine++
 		}
 	case "r":
-		if selectedTask != nil {
-			core.tl.RenameTask(selectedTask.GetID(), msg)
+		if core.selectedTask != nil {
+			core.tl.RenameTask(core.selectedTask.GetID(), msg)
 		}
 	case "R":
 		core.tl.Name = msg
 		//
 	}
-	stl := taskToString(&(core.tl.Tasks), 0)
-	maxscroll = len(stl)
 
-	// styling the tasks string
+}
+func styleSTL(stl []strTask) []strTask{
 	for i, t := range stl {
 
-		if len(t.s) > horizontalIndex && len(t.s) < horizontalIndex+tui.Width-6 {
-			t.s = t.s[horizontalIndex:]
-		} else if len(t.s) >= horizontalIndex+tui.Width-6 {
-			t.s = t.s[horizontalIndex : horizontalIndex+tui.Width-6]
+		if len(t.s) > core.horizontalIndex && len(t.s) < core.horizontalIndex+tui.Width-6 {
+			t.s = t.s[core.horizontalIndex:]
+		} else if len(t.s) >= core.horizontalIndex+tui.Width-6 {
+			t.s = t.s[core.horizontalIndex : core.horizontalIndex+tui.Width-6]
 		} else {
 			t.s = ""
 		}
 
 		style := lipgloss.NewStyle()
-		if (*t.t).IsCompleted() {
+		if (t.t).IsCompleted() {
 			style = style.Foreground(lipgloss.Color("#6cef2f"))
 		}
-		switch (*t.t).(type) {
+		switch (t.t).(type) {
 		case *task.CompositeTask:
 			style = style.Bold(true)
 			if len(t.s) != 0 {
 				t.s += lipgloss.NewStyle().Foreground(lipgloss.Color("#fc4103")).Render(" #")
 			}
 		}
-		if i+1 == tasksViewSelectedLine {
-			selectedTask = *t.t
+		if i+1 == core.tasksViewSelectedLine {
+			core.selectedTask = t.t
 			style = style.Background(lipgloss.Color("#6f5e73"))
 		}
 		stl[i].s = style.Render(t.s)
 	}
-
-	f := footerStr()
-	tui.SetFooter(f)
-
-	headerHeight := lipgloss.Height(h)
-	footerHeight := lipgloss.Height(f)
-	bodyHeight := tui.Height - (headerHeight + footerHeight) - 4
-	tasksLinesCount := bodyHeight - 2
-
-	v := tasksViewSelectedLine - tasksViewStartLine
-	if v == tasksLinesCount+1 {
-		tasksViewStartLine++
-	} else if v < 0 {
-		tasksViewStartLine += v
-	}
-
-	var sl []string
-	for _, st := range stl {
-		sl = append(sl, st.s)
-	}
-
-	if len(sl) == 0 {
-		tui.SetStrList(sl)
-	}
-	if tasksViewStartLine+tasksLinesCount <= len(stl) {
-		tui.SetStrList(sl[tasksViewStartLine-1 : tasksViewStartLine+tasksLinesCount])
-	} else {
-		if tasksViewStartLine == 0 {
-			tui.SetStrList(sl)
-		} else {
-			tui.SetStrList(sl[tasksViewStartLine-1:])
-		}
-	}
-
+	return stl
 }
 
 func taskToString(tl *[]task.Tasker, indent int) []strTask {
 	var stl []strTask
-	horizontalCap = 0
+	core.horizontalCap = 0
 	for i, t := range *tl {
 		str := strings.Repeat("\t", indent) + strconv.Itoa(i+1) + ". "
 		switch tt := t.(type) {
 		case *task.Task:
 			str += tt.Title
-			stl = append(stl, strTask{s: str, t: &(*tl)[i]})
+			stl = append(stl, strTask{s: str, t: (*tl)[i]})
 		case *task.CompositeTask:
 			str += tt.Title
-			stl = append(stl, strTask{s: str, t: &(*tl)[i]})
-			if slices.Contains(unfoldCompTasks, tt.GetID()) {
+			stl = append(stl, strTask{s: str, t: (*tl)[i]})
+			if slices.Contains(core.unfoldCompTasks, tt.GetID()) {
 				stl = append(stl, taskToString(&tt.SubTasks, indent+1)...)
 			}
 		}
 		l := len(str)
-		if l > horizontalCap {
-			horizontalCap = l
+		if l > core.horizontalCap {
+			core.horizontalCap = l
 		}
 	}
 	return stl
@@ -239,16 +249,16 @@ func footerStr() string {
 
 	rightHand := "Status: "
 	leftHand := "Type: "
-	if selectedTask != nil {
+	if core.selectedTask != nil {
 		rHS := lipgloss.NewStyle()
-		if selectedTask.IsCompleted() {
+		if core.selectedTask.IsCompleted() {
 			rHS = rHS.Foreground(lipgloss.Color("#6cef2f"))
 			rightHand += rHS.Render("Completed")
 		} else {
 			rHS = rHS.Foreground(lipgloss.Color("#fc4103"))
 			rightHand += rHS.Render("Incompleted")
 		}
-		switch selectedTask.(type) {
+		switch core.selectedTask.(type) {
 		case *task.Task:
 			leftHand += "Task"
 		case *task.CompositeTask:
@@ -261,7 +271,7 @@ func footerStr() string {
 		lipgloss.PlaceHorizontal(
 			footerWidth/3,
 			lipgloss.Center,
-			strconv.Itoa(tasksViewSelectedLine)+":"+strconv.Itoa(horizontalIndex),
+			strconv.Itoa(core.tasksViewSelectedLine)+":"+strconv.Itoa(core.horizontalIndex),
 		),
 		lipgloss.PlaceHorizontal(footerWidth/3, lipgloss.Right, rightHand),
 	)

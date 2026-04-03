@@ -51,7 +51,7 @@ func main() {
 		fmt.Printf("error of type %T\n", err)
 		fmt.Println("description:\n\t", err)
 	}
-	if len(tl.Tasks) + len(tl.Name) == 0 {
+	if len(tl.Tasks) == 0 && tl.Name == "New todo list" {
 		return
 	}
 	err := tl.Write(path)

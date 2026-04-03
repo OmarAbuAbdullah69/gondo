@@ -12,15 +12,18 @@ import (
 type model struct {
 }
 
+type ViewModel struct {
+	Header string
+	StrList   []string
+	Footer string
+}
+
 var (
 	Width  int
 	Height int
 
-	updateFunc func(string, string)
-	header     string
-	strList    []string
-	footer     string
-
+	updateFunc  func(string, string) ViewModel
+	vm          ViewModel
 	input       textinput.Model
 	listtening  bool = false
 	inputString string
@@ -32,19 +35,10 @@ func SetKeyListen(s []string) {
 	keyListen = append(keyListen, s...)
 }
 
-func SetUpdater(u func(string, string)) {
+func SetUpdater(u func(string, string) ViewModel) {
 	updateFunc = u
 }
 
-func SetHeader(h string) {
-	header = h
-}
-func SetStrList(sl []string) {
-	strList = sl
-}
-func SetFooter(f string) {
-	footer = f
-}
 func Newmodle() model {
 	input = textinput.New()
 	return model{}
@@ -102,23 +96,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			ListenEvent = ""
 			inputString = ""
 		} else {
-			updateFunc(event, inputString)
+			vm = updateFunc(event, inputString)
 		}
 	} else {
-		updateFunc("", "")
+		vm = updateFunc("", "")
 	}
 	return m, cmd
 }
 
 func (m model) View() string {
 	if listtening {
-		footer = input.View()
+		vm.Footer = input.View()
 		fs := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#fc4103")).
-		Width(Width - 8)
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#fc4103")).
+			Width(Width - 8)
 
-		footer = fs.Render(footer)
+		vm.Footer = fs.Render(vm.Footer)
 	}
 	// Send the UI for rendering
 	var view string
@@ -137,14 +131,14 @@ func (m model) View() string {
 		BottomRight: ""}
 	var body string
 
-	for i, s := range strList {
-		if i != len(strList)-1 {
+	for i, s := range vm.StrList {
+		if i != len(vm.StrList)-1 {
 			s += "\n"
 		}
 		body += s
 	}
-	headerHeight := lipgloss.Height(header)
-	footerHeight := lipgloss.Height(footer)
+	headerHeight := lipgloss.Height(vm.Header)
+	footerHeight := lipgloss.Height(vm.Footer)
 	bodyHeight := Height - (headerHeight + footerHeight) - 2
 
 	bodyStyle := lipgloss.NewStyle().Border(bodyBorder)
@@ -153,13 +147,13 @@ func (m model) View() string {
 	// drawing the tasks
 	view = lipgloss.JoinVertical(
 		lipgloss.Left,
-		header,
+		vm.Header,
 		lipgloss.JoinHorizontal(
 			lipgloss.Left,
 			lipgloss.Place(0, bodyHeight, lipgloss.Left, lipgloss.Top, " "),
 			bodyStyle.Render(body),
 		),
-		footer,
+		vm.Footer,
 	)
 
 	return frame.Render(view)
